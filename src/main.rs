@@ -1,8 +1,9 @@
-use regex::Regex;
 use core::panic;
+use regex::Regex;
 use std::collections::BTreeMap;
 
-const EMAIL_REGEX: &str = r"^([a-z0-9_+]([a-z0-9_+.]*[a-z0-9_+])?)@([a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,6})";
+const EMAIL_REGEX: &str =
+    r"^([a-z0-9_+]([a-z0-9_+.]*[a-z0-9_+])?)@([a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,6})";
 const DE_PHONE_NO_REGEX: &str = r"49[0-9]{9,10}";
 
 struct Contact {
@@ -12,20 +13,26 @@ struct Contact {
 }
 
 struct ContactsApp {
-    contacts: BTreeMap<String, Contact>
+    contacts: BTreeMap<String, Contact>,
 }
 
 impl ContactsApp {
     fn new() -> Self {
-        ContactsApp { contacts: BTreeMap::new() }
+        ContactsApp {
+            contacts: BTreeMap::new(),
+        }
     }
 
-    fn add(&mut self, name: String, phone_no_as_string: String, email: String) -> Result<(), String> {
-    
-        let de_phone_no_regex: Regex; 
+    fn add(
+        &mut self,
+        name: String,
+        phone_no_as_string: String,
+        email: String,
+    ) -> Result<(), String> {
+        let de_phone_no_regex: Regex;
         match Regex::new(DE_PHONE_NO_REGEX) {
             Ok(r) => de_phone_no_regex = r,
-            Err(_) => panic!("DE_PHONE_NO_REGEX is not a valid regex"),
+            Err(_) => return Err("DE_PHONE_NO_REGEX is not a valid regex".to_string()),
         }
 
         if !de_phone_no_regex.is_match(&phone_no_as_string) {
@@ -35,29 +42,35 @@ impl ContactsApp {
         let phone_no;
         match phone_no_as_string.parse::<u64>() {
             Ok(val) => phone_no = val,
-            Err(_) => panic!("valid phone number is not a u64 value"),
+            Err(_) => return Err("valid phone number is not a u64 value".to_string()),
         }
 
         let email_regex: Regex;
         match Regex::new(EMAIL_REGEX) {
             Ok(r) => email_regex = r,
-            Err(_) => panic!("EMAIL_REGEX is not a valid regex"),
+            Err(_) => return Err("EMAIL_REGEX is not a valid regex".to_string()),
         }
 
         if !email_regex.is_match(&email) {
             return Err(String::from("invalid email"));
         }
 
-        self.contacts.insert(name.clone(), Contact { name, phone_no, email });
+        self.contacts.insert(
+            name.clone(),
+            Contact {
+                name,
+                phone_no,
+                email,
+            },
+        );
         Ok(())
     }
 
     fn update_email(&mut self, name: &str, new_email: String) -> Result<(), String> {
-
         let email_regex: Regex;
         match Regex::new(EMAIL_REGEX) {
             Ok(r) => email_regex = r,
-            Err(_) => panic!("EMAIL_REGEX is not a valid regex"),
+            Err(_) => return Err("EMAIL_REGEX is not a valid regex".to_string()),
         }
 
         if !email_regex.is_match(&new_email) {
@@ -74,11 +87,10 @@ impl ContactsApp {
     }
 
     fn update_phone(&mut self, name: &str, new_phone_no_as_string: String) -> Result<(), String> {
-
-        let de_phone_no_regex: Regex; 
+        let de_phone_no_regex: Regex;
         match Regex::new(DE_PHONE_NO_REGEX) {
             Ok(r) => de_phone_no_regex = r,
-            Err(_) => panic!("DE_PHONE_NO_REGEX is not a valid regex"),
+            Err(_) => return Err("DE_PHONE_NO_REGEX is not a valid regex".to_string()),
         }
 
         if !de_phone_no_regex.is_match(&new_phone_no_as_string) {
@@ -88,7 +100,7 @@ impl ContactsApp {
         let new_phone_no;
         match new_phone_no_as_string.parse::<u64>() {
             Ok(val) => new_phone_no = val,
-            Err(_) => panic!("valid phone number is not a u64 value"),
+            Err(_) => return Err("valid phone number is not a u64 value".to_string()),
         }
 
         match self.contacts.get_mut(name) {
@@ -115,7 +127,11 @@ impl ContactsApp {
     }
 
     fn list(&self, page_no: usize, page_size: usize) -> Vec<&Contact> {
-        self.contacts.values().skip(page_no * page_size).take(page_size).collect()
+        self.contacts
+            .values()
+            .skip(page_no * page_size)
+            .take(page_size)
+            .collect()
     }
 }
 
@@ -158,7 +174,7 @@ fn main() {
         Err(_) => panic!("EMAIL_REGEX is not a valid regex"),
     }
 
-    let de_phone_no_regex: Regex; 
+    let de_phone_no_regex: Regex;
     match Regex::new(DE_PHONE_NO_REGEX) {
         Ok(r) => de_phone_no_regex = r,
         Err(_) => panic!("DE_PHONE_NO_REGEX is not a valid regex"),
