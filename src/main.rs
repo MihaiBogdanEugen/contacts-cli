@@ -1,9 +1,10 @@
+use lazy_static::lazy_static;
 use regex::Regex;
 use std::collections::BTreeMap;
 
-const EMAIL_REGEX: &str =
+const EMAIL_REGEX_STR: &str =
     r"^([a-z0-9_+]([a-z0-9_+.]*[a-z0-9_+])?)@([a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,6})";
-const DE_PHONE_NO_REGEX: &str = r"49[0-9]{9,10}";
+const DE_PHONE_NO_REGEX_STR: &str = r"49[0-9]{9,10}";
 
 struct Contact {
     name: String,
@@ -36,33 +37,32 @@ impl InMemoryContactsService {
         }
     }
 
-    fn is_valid_email_(text: &String) -> Result<bool, &str> {
-        Self::is_valid_regex(text, EMAIL_REGEX)
-    }
-
-    fn is_valid_phone_no(text: &String) -> Result<bool, &str> {
-        Self::is_valid_regex(text, DE_PHONE_NO_REGEX)
-    }
-
-    fn is_valid_regex<'a>(text: &String, re: &str) -> Result<bool, &'a str> {
-        match Regex::new(re) {
-            Ok(regex) => Ok(regex.is_match(text)),
-            Err(_) => return Err("invalid regex"),
+    fn is_valid_email_(text: &String) -> bool {
+        lazy_static! {
+            //NEVER unwrap in prod
+            static ref EMAIL_REGEX: Regex = Regex::new(EMAIL_REGEX_STR).unwrap();
         }
+        EMAIL_REGEX.is_match(text)
+    }
+
+    fn is_valid_phone_no(text: &String) -> bool {
+        lazy_static! {
+            //NEVER unwrap in prod
+            static ref DE_PHONE_NO_REGEX: Regex = Regex::new(DE_PHONE_NO_REGEX_STR).unwrap();
+        }
+        DE_PHONE_NO_REGEX.is_match(text)
     }
 }
 
 impl ContactsService for InMemoryContactsService {
     fn add(&mut self, name: String, phone_no_as_string: String, email: String) -> Result<(), &str> {
 
-        match Self::is_valid_email_(&email) {
-            Ok(is_valid) => if !is_valid { return Err("invalid email"); },
-            Err(_) => return Err("invalid email regex"),
+        if !Self::is_valid_email_(&email) {
+            return Err("invalid email");
         }
 
-        match Self::is_valid_phone_no(&phone_no_as_string) {
-            Ok(is_valid) => if !is_valid { return Err("invalid phone_no"); },
-            Err(_) => return Err("invalid phone_no regex"),
+        if !Self::is_valid_phone_no(&phone_no_as_string) {
+            return Err("invalid phone_no");
         }
 
         match phone_no_as_string.parse::<u64>() {
@@ -76,9 +76,8 @@ impl ContactsService for InMemoryContactsService {
 
     fn update_email(&mut self, name: &str, new_email: String) -> Result<(), &str> {
         
-        match Self::is_valid_email_(&new_email) {
-            Ok(is_valid) => if !is_valid { return Err("invalid email"); },
-            Err(_) => return Err("invalid email regex"),
+        if !Self::is_valid_email_(&new_email) {
+            return Err("invalid email");
         }
 
         match self.contacts.get_mut(name) {
@@ -92,9 +91,8 @@ impl ContactsService for InMemoryContactsService {
 
     fn update_phone(&mut self, name: &str, new_phone_no_as_string: String) -> Result<(), &str> {
         
-        match Self::is_valid_phone_no(&new_phone_no_as_string) {
-            Ok(is_valid) => if !is_valid { return Err("invalid phone_no"); },
-            Err(_) => return Err("invalid phone_no regex"),
+        if !Self::is_valid_phone_no(&new_phone_no_as_string) {
+            return Err("invalid phone_no");
         }
 
         match new_phone_no_as_string.parse::<u64>() {
