@@ -12,23 +12,30 @@ struct Contact {
     email: String,
 }
 
-struct ContactsApp {
-    contacts: BTreeMap<String, Contact>,
+trait ContactsService {
+    fn add(&mut self, name: String, phone_no_as_string: String, email: String) -> Result<(), String>;
+    fn update_email(&mut self, name: &str, new_email: String) -> Result<(), String>;
+    fn update_phone(&mut self, name: &str, new_phone_no_as_string: String) -> Result<(), String>;
+    fn delete(&mut self, name: &str) -> Result<(), String>;
+    fn get(&self, name: &str) -> Result<&Contact, String>;
+    fn list(&self, page_no: usize, page_size: usize) -> Vec<&Contact>;
 }
 
-impl ContactsApp {
+struct InMemoryContactsService {
+    contacts: BTreeMap<String, Contact>
+}
+
+impl InMemoryContactsService {
     fn new() -> Self {
-        ContactsApp {
+        InMemoryContactsService {
             contacts: BTreeMap::new(),
         }
     }
+}
 
-    fn add(
-        &mut self,
-        name: String,
-        phone_no_as_string: String,
-        email: String,
-    ) -> Result<(), String> {
+impl ContactsService for InMemoryContactsService {
+    
+    fn add(&mut self, name: String, phone_no_as_string: String, email: String) -> Result<(), String> {
         let de_phone_no_regex: Regex;
         match Regex::new(DE_PHONE_NO_REGEX) {
             Ok(r) => de_phone_no_regex = r,
