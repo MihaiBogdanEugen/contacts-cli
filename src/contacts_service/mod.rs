@@ -17,7 +17,7 @@ pub trait ContactsService {
 
     fn update_email(&mut self, name: &str, new_email: String) -> Result<(), &str>;
 
-    fn update_phone(&mut self, name: &str, new_phone_no_as_string: String) -> Result<(), &str>;
+    fn update_phone_no(&mut self, name: &str, new_phone_no_as_string: String) -> Result<(), &str>;
 
     fn delete(&mut self, name: &str) -> Option<Contact>;
 
@@ -92,7 +92,7 @@ impl ContactsService for InMemoryContactsService {
         }
     }
 
-    fn update_phone(&mut self, name: &str, new_phone_no_as_string: String) -> Result<(), &str> {
+    fn update_phone_no(&mut self, name: &str, new_phone_no_as_string: String) -> Result<(), &str> {
         if !Self::is_valid_phone_no(&new_phone_no_as_string) {
             return Err("invalid phone_no");
         }
@@ -193,7 +193,7 @@ mod tests {
 
         let new_expected_phone_no_as_string: String = "490123456789".to_string();
         contacts_service
-            .update_phone("Bogdan", new_expected_phone_no_as_string.clone())
+            .update_phone_no("Bogdan", new_expected_phone_no_as_string.clone())
             .unwrap();
 
         let new_email: String = "new_bogdan@mail.com".to_string();
