@@ -39,7 +39,6 @@ impl InMemoryContactsService {
 
     fn is_valid_email(text: &String) -> bool {
         lazy_static! {
-            //NEVER unwrap in prod
             static ref EMAIL_REGEX: Regex = Regex::new(EMAIL_REGEX_STR).unwrap();
         }
         EMAIL_REGEX.is_match(text)
@@ -47,7 +46,6 @@ impl InMemoryContactsService {
 
     fn is_valid_phone_no(text: &String) -> bool {
         lazy_static! {
-            //NEVER unwrap in prod
             static ref DE_PHONE_NO_REGEX: Regex = Regex::new(DE_PHONE_NO_REGEX_STR).unwrap();
         }
         DE_PHONE_NO_REGEX.is_match(text)

@@ -31,7 +31,7 @@ clean:
 fmt:
 	@cargo fmt
 
-## fmt: Run the tests
+## test: Run the tests
 test:
 	@cargo test
 
