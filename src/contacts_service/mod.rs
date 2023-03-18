@@ -1,11 +1,13 @@
 use lazy_static::lazy_static;
 use regex::Regex;
-use std::collections::BTreeMap;
+use serde::{Serialize};
+use std::{collections::BTreeMap, fs::File, io::Write};
 
 const EMAIL_REGEX_STR: &str =
     r"^([a-z0-9_+]([a-z0-9_+.]*[a-z0-9_+])?)@([a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,6})";
 const DE_PHONE_NO_REGEX_STR: &str = r"49[0-9]{9,10}";
 
+#[derive(Serialize)]
 pub struct Contact {
     pub name: String,
     pub phone_no: u64,
@@ -24,6 +26,8 @@ pub trait ContactsService {
     fn get(&self, name: &str) -> Option<&Contact>;
 
     fn list(&self, page_no: usize, page_size: usize) -> Vec<&Contact>;
+
+    fn export_to_json(&self, file_path: String) -> Result<(), String>;
 }
 
 pub struct InMemoryContactsService {
@@ -123,6 +127,25 @@ impl ContactsService for InMemoryContactsService {
             .skip(page_no * page_size)
             .take(page_size)
             .collect()
+    }
+
+    fn export_to_json(&self, path: String) -> Result<(), String> {
+        let list: Vec<&Contact> = self.contacts.values().collect();
+
+        match serde_json::to_string(&list) {
+            Ok(json_str) => {                    
+                match File::create(path) {
+                    Ok(mut file) => {
+                        match file.write_all(json_str.as_bytes()) {
+                            Ok(_) => Ok(()),
+                            Err(err) => return Err(err.to_string()),
+                        }
+                    },
+                    Err(err) => return Err(err.to_string()),
+                }
+            },
+            Err(err) => return Err(err.to_string()),
+        }
     }
 }
 

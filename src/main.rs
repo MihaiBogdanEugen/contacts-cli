@@ -75,6 +75,11 @@ fn respond(line: &str, contacts_service: &mut InMemoryContactsService) -> Result
                 None => stdout_write_unknown_key(name)?,
             }
         }
+        Some(("export", sub_matches)) => {
+            let path: &str = get_arg("PATH", sub_matches);
+            contacts_service.export_to_json(path.to_string())?;
+            stdout_write("Contacts exported successfully")?;
+        }
         Some(("quit", _)) => {
             stdout_write("Exiting...")?;
             quit = true;
@@ -130,6 +135,12 @@ fn cli() -> Command {
                 .arg(arg!(<NAME> "The name of the contact"))
                 .arg_required_else_help(true),
         )
+        .subcommand(
+            Command::new("export")
+                .about("Export contacts to a json file")
+                .arg(arg!(<PATH> "The path of the json file"))
+                .arg_required_else_help(true),
+        )        
         .subcommand(Command::new("quit").alias("exit").about("Quit the REPL"))
 }
 
