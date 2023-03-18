@@ -1,15 +1,18 @@
 use crate::contacts_service::{ContactsService, InMemoryContactsService};
 use clap::{arg, ArgMatches, Command};
+use contacts_service::Contact;
 use std::io::Write;
 
 pub mod contacts_service;
 
 fn main() -> Result<(), String> {
-    println!("contacts-app");
+    stdout_write(
+        "contacts-app\n\nUse `help` to discover more commands, or `quit` to exit the REPL\n",
+    )?;
     let mut contacts_service: InMemoryContactsService = InMemoryContactsService::new();
 
     loop {
-        let line: String = readline()?;
+        let line: String = stdin_read_line()?;
         let line: &str = line.trim();
         if line.is_empty() {
             continue;
@@ -22,8 +25,8 @@ fn main() -> Result<(), String> {
                 }
             }
             Err(err) => {
-                write!(std::io::stdout(), "{err}").map_err(|e| e.to_string())?;
-                std::io::stdout().flush().map_err(|e| e.to_string())?;
+                stderr_write(err.as_str())?;
+                stderr_flush()?;
             }
         }
     }
@@ -33,78 +36,58 @@ fn main() -> Result<(), String> {
 
 fn respond(line: &str, contacts_service: &mut InMemoryContactsService) -> Result<bool, String> {
     let args: Vec<String> = shlex::split(line).ok_or("error: Invalid quoting")?;
-
     let matches: ArgMatches = cli()
         .try_get_matches_from(args)
         .map_err(|e| e.to_string())?;
+    let mut quit: bool = false;
 
     match matches.subcommand() {
         Some(("add", sub_matches)) => {
-            let name: &String = sub_matches.get_one::<String>("NAME").expect("required");
-            let phone_no_as_string: &String =
-                sub_matches.get_one::<String>("PHONE_NO").expect("required");
-            let email: &String = sub_matches.get_one::<String>("EMAIL").expect("required");
-
-            match contacts_service.add(
-                name.to_string(),
-                phone_no_as_string.to_string(),
-                email.to_string(),
-            ) {
-                Ok(_) => println!("Contact added succesfully"),
-                Err(msg) => println!("Err: {}", msg),
-            }
-        }
-        Some(("view", sub_matches)) => {
-            let name: &String = sub_matches.get_one::<String>("NAME").expect("required");
-
-            match contacts_service.get(name) {
-                Some(contact) => println!(
-                    "Contact\n- name: {}\n- phone_no: {}\n- email: {}\n",
-                    contact.name, contact.phone_no, contact.email
-                ),
-                None => println!("No contact with name {}", name),
-            }
+            let name: String = get_arg("NAME", sub_matches).to_string();
+            let phone_no_as_string: String = get_arg("PHONE_NO", sub_matches).to_string();
+            let email: String = get_arg("EMAIL", sub_matches).to_string();
+            contacts_service.add(name, phone_no_as_string, email)?;
+            stdout_write("Contact added succesfully")?;
         }
         Some(("update-phone-no", sub_matches)) => {
-            let name: &String = sub_matches.get_one::<String>("NAME").expect("required");
-            let new_phone_no_as_string: &String = sub_matches
-                .get_one::<String>("NEW_PHONE_NO")
-                .expect("required");
-
-            match contacts_service.update_phone_no(name, new_phone_no_as_string.to_string()) {
-                Ok(_) => println!("Contact updated succesfully"),
-                Err(msg) => println!("Err: {}", msg),
-            }
+            let name: &str = get_arg("NAME", sub_matches);
+            let new_phone_no_as_string: String = get_arg("NEW_PHONE_NO", sub_matches).to_string();
+            contacts_service.update_phone_no(name, new_phone_no_as_string)?;
+            stdout_write("Contact updated succesfully")?;
         }
         Some(("update-email", sub_matches)) => {
-            let name: &String = sub_matches.get_one::<String>("NAME").expect("required");
-            let new_email: &String = sub_matches
-                .get_one::<String>("NEW_EMAIL")
-                .expect("required");
-
-            match contacts_service.update_email(name, new_email.to_string()) {
-                Ok(_) => println!("Contact updated succesfully"),
-                Err(msg) => println!("Err: {}", msg),
+            let name: &str = get_arg("NAME", sub_matches);
+            let new_email: String = get_arg("NEW_EMAIL", sub_matches).to_string();
+            contacts_service.update_email(name, new_email)?;
+            stdout_write("Contact updated succesfully")?;
+        }
+        Some(("view", sub_matches)) => {
+            let name: &str = get_arg("NAME", sub_matches);
+            match contacts_service.get(name) {
+                Some(contact) => stdout_write_contact(contact)?,
+                None => stdout_write_unknown_key(name)?,
             }
         }
         Some(("delete", sub_matches)) => {
-            let name: &String = sub_matches.get_one::<String>("NAME").expect("required");
-
+            let name: &str = get_arg("NAME", sub_matches);
             match contacts_service.delete(name) {
-                Some(_) => println!("Contact deleted succesfully"),
-                None => println!("No contact with name {}", name),
+                Some(_) => stdout_write("Contact deleted succesfully")?,
+                None => stdout_write_unknown_key(name)?,
             }
         }
-        Some(("quit", _matches)) => {
-            write!(std::io::stdout(), "Exiting ...").map_err(|e| e.to_string())?;
-            std::io::stdout().flush().map_err(|e| e.to_string())?;
-            return Ok(true);
+        Some(("quit", _)) => {
+            stdout_write("Exiting...")?;
+            quit = true;
         }
-        Some((name, _matches)) => println!("unknown command `{}`", name),
+        Some((command, _)) => {
+            stderr_write_unknown_command(command)?;
+            stderr_flush()?;
+        }
         None => unreachable!("subcommand required"),
     }
 
-    Ok(false)
+    stdout_flush()?;
+    Ok(quit)
 }
 
 fn cli() -> Command {
@@ -150,12 +133,51 @@ fn cli() -> Command {
         .subcommand(Command::new("quit").alias("exit").about("Quit the REPL"))
 }
 
-fn readline() -> Result<String, String> {
-    write!(std::io::stdout(), "$ ").map_err(|e| e.to_string())?;
-    std::io::stdout().flush().map_err(|e| e.to_string())?;
-    let mut buffer: String = String::new();
+fn stdin_read_line() -> Result<String, String> {
+    stdout_write("\n$ ")?;
+    stdout_flush()?;
+    let mut buf: String = String::new();
     std::io::stdin()
-        .read_line(&mut buffer)
+        .read_line(&mut buf)
         .map_err(|e| e.to_string())?;
-    Ok(buffer)
+    Ok(buf)
+}
+
+fn stdout_flush() -> Result<(), String> {
+    std::io::stdout().flush().map_err(|e| e.to_string())
+}
+
+fn stderr_flush() -> Result<(), String> {
+    std::io::stderr().flush().map_err(|e| e.to_string())
+}
+
+fn stdout_write(text: &str) -> Result<(), String> {
+    write!(std::io::stdout(), "{}", text).map_err(|e| e.to_string())
+}
+
+fn stdout_write_contact(contact: &Contact) -> Result<(), String> {
+    write!(
+        std::io::stdout(),
+        "Contact\n- name: {}\n- phone_no: {}\n- email: {}",
+        contact.name,
+        contact.phone_no,
+        contact.email
+    )
+    .map_err(|e| e.to_string())
+}
+
+fn stdout_write_unknown_key(key: &str) -> Result<(), String> {
+    write!(std::io::stdout(), "No contact with name {}", key).map_err(|e| e.to_string())
+}
+
+fn stderr_write(err: &str) -> Result<(), String> {
+    write!(std::io::stderr(), "Err: {}", err).map_err(|e| e.to_string())
+}
+
+fn stderr_write_unknown_command(command: &str) -> Result<(), String> {
+    write!(std::io::stderr(), "Unknown command: {}", command).map_err(|e| e.to_string())
+}
+
+fn get_arg<'a>(id: &str, sub_matches: &'a ArgMatches) -> &'a str {
+    sub_matches.get_one::<String>(id).expect("required")
 }
