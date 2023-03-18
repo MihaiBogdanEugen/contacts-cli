@@ -1,13 +1,17 @@
 use lazy_static::lazy_static;
 use regex::Regex;
-use serde::{Serialize};
-use std::{collections::BTreeMap, fs::File, io::Write};
+use serde::{Deserialize, Serialize};
+use std::{
+    collections::BTreeMap,
+    fs::File,
+    io::{BufReader, Error, Write},
+};
 
 const EMAIL_REGEX_STR: &str =
     r"^([a-z0-9_+]([a-z0-9_+.]*[a-z0-9_+])?)@([a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,6})";
 const DE_PHONE_NO_REGEX_STR: &str = r"49[0-9]{9,10}";
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct Contact {
     pub name: String,
     pub phone_no: u64,
@@ -27,7 +31,9 @@ pub trait ContactsService {
 
     fn list(&self, page_no: usize, page_size: usize) -> Vec<&Contact>;
 
-    fn export_to_json(&self, file_path: String) -> Result<(), String>;
+    fn export_to_json(&self, file_path: String) -> Result<(), Error>;
+
+    fn import_from_json(&mut self, path: String) -> Result<(), Error>;
 }
 
 pub struct InMemoryContactsService {
@@ -129,23 +135,22 @@ impl ContactsService for InMemoryContactsService {
             .collect()
     }
 
-    fn export_to_json(&self, path: String) -> Result<(), String> {
+    fn export_to_json(&self, path: String) -> Result<(), Error> {
         let list: Vec<&Contact> = self.contacts.values().collect();
+        let json_str: String = serde_json::to_string(&list)?;
+        let mut file: File = File::create(path)?;
+        file.write_all(json_str.as_bytes())?;
+        Ok(())
+    }
 
-        match serde_json::to_string(&list) {
-            Ok(json_str) => {                    
-                match File::create(path) {
-                    Ok(mut file) => {
-                        match file.write_all(json_str.as_bytes()) {
-                            Ok(_) => Ok(()),
-                            Err(err) => return Err(err.to_string()),
-                        }
-                    },
-                    Err(err) => return Err(err.to_string()),
-                }
-            },
-            Err(err) => return Err(err.to_string()),
+    fn import_from_json(&mut self, path: String) -> Result<(), Error> {
+        let inner: File = File::open(path)?;
+        let rdr: BufReader<File> = BufReader::new(inner);
+        let contacts: Vec<Contact> = serde_json::from_reader(rdr).unwrap();
+        for contact in contacts {
+            self.contacts.insert(contact.name.clone(), contact);
         }
+        Ok(())
     }
 }
 

@@ -77,8 +77,17 @@ fn respond(line: &str, contacts_service: &mut InMemoryContactsService) -> Result
         }
         Some(("export", sub_matches)) => {
             let path: &str = get_arg("PATH", sub_matches);
-            contacts_service.export_to_json(path.to_string())?;
-            stdout_write("Contacts exported successfully")?;
+            match contacts_service.export_to_json(path.to_string()) {
+                Ok(_) => stdout_write("Contacts exported successfully")?,
+                Err(err) => stderr_write(&err.to_string())?,
+            }
+        }
+        Some(("import", sub_matches)) => {
+            let path: &str = get_arg("PATH", sub_matches);
+            match contacts_service.import_from_json(path.to_string()) {
+                Ok(_) => stdout_write("Contacts imported successfully")?,
+                Err(err) => stderr_write(&err.to_string())?,
+            }
         }
         Some(("quit", _)) => {
             stdout_write("Exiting...")?;
@@ -140,7 +149,13 @@ fn cli() -> Command {
                 .about("Export contacts to a json file")
                 .arg(arg!(<PATH> "The path of the json file"))
                 .arg_required_else_help(true),
-        )        
+        )
+        .subcommand(
+            Command::new("import")
+                .about("Import contacts from a json file")
+                .arg(arg!(<PATH> "The path of the json file"))
+                .arg_required_else_help(true),
+        )
         .subcommand(Command::new("quit").alias("exit").about("Quit the REPL"))
 }
 

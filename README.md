@@ -54,6 +54,4 @@ contacts: BTreeMap<String, Contact>,
 - separate module with private fields and methods => [1bdf4ce](https://github.com/MihaiBogdanEugen/contacts-app/tree/1bdf4ce891d5971dba0d1e08aef9dc568bb18d3b)
 
 ## Todos
-- JSON export/import
-- Interactive CLI
 - search 
