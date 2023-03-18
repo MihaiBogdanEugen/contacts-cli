@@ -52,14 +52,20 @@ fn respond(line: &str, contacts_service: &mut InMemoryContactsService) -> Result
         Some(("update-phone-no", sub_matches)) => {
             let name: &str = get_arg("NAME", sub_matches);
             let new_phone_no_as_string: String = get_arg("NEW_PHONE_NO", sub_matches).to_string();
-            contacts_service.update_phone_no(name, new_phone_no_as_string)?;
-            stdout_write("Contact updated succesfully")?;
+            if contacts_service.update_phone_no(name, new_phone_no_as_string)? {
+                stdout_write("Contact updated succesfully")?;
+            } else {
+                stdout_write_unknown_key(name)?;
+            }
         }
         Some(("update-email", sub_matches)) => {
             let name: &str = get_arg("NAME", sub_matches);
             let new_email: String = get_arg("NEW_EMAIL", sub_matches).to_string();
-            contacts_service.update_email(name, new_email)?;
-            stdout_write("Contact updated succesfully")?;
+            if contacts_service.update_email(name, new_email)? {
+                stdout_write("Contact updated succesfully")?;
+            } else {
+                stdout_write_unknown_key(name)?;
+            }
         }
         Some(("view", sub_matches)) => {
             let name: &str = get_arg("NAME", sub_matches);

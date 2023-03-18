@@ -1,4 +1,3 @@
-use lazy_static::lazy_static;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -7,9 +6,9 @@ use std::{
     io::{BufReader, Error, Write},
 };
 
-const EMAIL_REGEX_STR: &str =
+const EMAIL_REGEX: &str =
     r"^([a-z0-9_+]([a-z0-9_+.]*[a-z0-9_+])?)@([a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,6})";
-const DE_PHONE_NO_REGEX_STR: &str = r"49[0-9]{9,10}";
+const DE_PHONE_NO_REGEX: &str = r"49[0-9]{9,10}";
 
 #[derive(Serialize, Deserialize)]
 pub struct Contact {
@@ -19,11 +18,11 @@ pub struct Contact {
 }
 
 pub trait ContactsService {
-    fn add(&mut self, name: String, phone_no_as_string: String, email: String) -> Result<(), &str>;
+    fn add(&mut self, name: String, phone_no_as_string: String, email: String) -> Result<(), String>;
 
-    fn update_email(&mut self, name: &str, new_email: String) -> Result<(), &str>;
+    fn update_email(&mut self, name: &str, new_email: String) -> Result<bool, String>;
 
-    fn update_phone_no(&mut self, name: &str, new_phone_no_as_string: String) -> Result<(), &str>;
+    fn update_phone_no(&mut self, name: &str, new_phone_no_as_string: String) -> Result<bool, String>;
 
     fn delete(&mut self, name: &str) -> Option<Contact>;
 
@@ -47,29 +46,45 @@ impl InMemoryContactsService {
         }
     }
 
-    fn is_valid_email(text: &String) -> bool {
-        lazy_static! {
-            static ref EMAIL_REGEX: Regex = Regex::new(EMAIL_REGEX_STR).unwrap();
-        }
-        EMAIL_REGEX.is_match(text)
+    fn is_valid_email(text: &String) -> Result<bool, regex::Error> {
+        Self::is_valid_regex(text, EMAIL_REGEX)
     }
 
-    fn is_valid_phone_no(text: &String) -> bool {
-        lazy_static! {
-            static ref DE_PHONE_NO_REGEX: Regex = Regex::new(DE_PHONE_NO_REGEX_STR).unwrap();
+    fn is_valid_phone_no(text: &String) -> Result<bool, regex::Error> {
+        Self::is_valid_regex(text, DE_PHONE_NO_REGEX)
+    }
+
+    fn is_valid_regex(text: &String, re: &str) -> Result<bool, regex::Error> {
+        match Regex::new(re) {
+            Ok(regex) => Ok(regex.is_match(text)),
+            Err(err) => return Err(err)
         }
-        DE_PHONE_NO_REGEX.is_match(text)
     }
 }
 
 impl ContactsService for InMemoryContactsService {
-    fn add(&mut self, name: String, phone_no_as_string: String, email: String) -> Result<(), &str> {
-        if !Self::is_valid_email(&email) {
-            return Err("invalid email");
+    fn add(&mut self, name: String, phone_no_as_string: String, email: String) -> Result<(), String> {
+
+        if name.is_empty() {
+            return Err("Name cannot be empty".to_string());
         }
 
-        if !Self::is_valid_phone_no(&phone_no_as_string) {
-            return Err("invalid phone_no");
+        match Self::is_valid_email(&email) {
+            Ok(is_valid_email) => {
+                if !is_valid_email {
+                    return Err("Email is not valid".to_string());
+                }
+            },
+            Err(err) => return Err(err.to_string()),
+        }
+
+        match Self::is_valid_phone_no(&phone_no_as_string) {
+            Ok(is_valid_phone_no) => {
+                if !is_valid_phone_no {
+                    return Err("Phone no is not valid".to_string());
+                }
+            },
+            Err(err) => return Err(err.to_string()),
         }
 
         match phone_no_as_string.parse::<u64>() {
@@ -84,38 +99,50 @@ impl ContactsService for InMemoryContactsService {
                 );
                 return Ok(());
             }
-            Err(_) => return Err("phone_no is not a u64 value"),
+            Err(err) => return Err(err.to_string()),
         }
     }
 
-    fn update_email(&mut self, name: &str, new_email: String) -> Result<(), &str> {
-        if !Self::is_valid_email(&new_email) {
-            return Err("invalid email");
+    fn update_email(&mut self, name: &str, new_email: String) -> Result<bool, String> {
+
+        match Self::is_valid_email(&new_email) {
+            Ok(is_valid_email) => {
+                if !is_valid_email {
+                    return Err("New email is not valid".to_string());
+                }
+            },
+            Err(err) => return Err(err.to_string()),
         }
 
         match self.contacts.get_mut(name) {
             Some(contact) => {
                 contact.email = new_email;
-                return Ok(());
+                return Ok(true);
             }
-            None => return Err("key not found"),
+            None => Ok(false),
         }
     }
 
-    fn update_phone_no(&mut self, name: &str, new_phone_no_as_string: String) -> Result<(), &str> {
-        if !Self::is_valid_phone_no(&new_phone_no_as_string) {
-            return Err("invalid phone_no");
+    fn update_phone_no(&mut self, name: &str, new_phone_no_as_string: String) -> Result<bool, String> {
+
+        match Self::is_valid_phone_no(&new_phone_no_as_string) {
+            Ok(is_valid_phone_no) => {
+                if !is_valid_phone_no {
+                    return Err("New phone no is not valid".to_string());
+                }
+            },
+            Err(err) => return Err(err.to_string()),
         }
 
         match new_phone_no_as_string.parse::<u64>() {
             Ok(new_phone_no) => match self.contacts.get_mut(name) {
                 Some(contact) => {
                     contact.phone_no = new_phone_no;
-                    return Ok(());
+                    return Ok(true);
                 }
-                None => return Err("key not found"),
+                None => Ok(false),
             },
-            Err(_) => return Err("phone_no is not a u64 value"),
+            Err(err) => return Err(err.to_string()),
         }
     }
 
@@ -188,14 +215,14 @@ mod tests {
     fn test_in_memory_contacts_service_add_validations() {
         let mut contacts_service: InMemoryContactsService = InMemoryContactsService::new();
 
-        let res_invalid_phone_no: Result<(), &str> = contacts_service.add(
+        let res_invalid_phone_no: Result<(), String> = contacts_service.add(
             "valid name".to_string(),
             "invalid phone no".to_string(),
             "validemail@mail.com".to_string(),
         );
         assert!(res_invalid_phone_no.is_err());
 
-        let res_invalid_email: Result<(), &str> = contacts_service.add(
+        let res_invalid_email: Result<(), String> = contacts_service.add(
             "valid name".to_string(),
             "491234567890".to_string(),
             "invalid email".to_string(),
