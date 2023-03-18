@@ -18,11 +18,20 @@ pub struct Contact {
 }
 
 pub trait ContactsService {
-    fn add(&mut self, name: String, phone_no_as_string: String, email: String) -> Result<(), String>;
+    fn add(
+        &mut self,
+        name: String,
+        phone_no_as_string: String,
+        email: String,
+    ) -> Result<(), String>;
 
     fn update_email(&mut self, name: &str, new_email: String) -> Result<bool, String>;
 
-    fn update_phone_no(&mut self, name: &str, new_phone_no_as_string: String) -> Result<bool, String>;
+    fn update_phone_no(
+        &mut self,
+        name: &str,
+        new_phone_no_as_string: String,
+    ) -> Result<bool, String>;
 
     fn delete(&mut self, name: &str) -> Option<Contact>;
 
@@ -57,14 +66,18 @@ impl InMemoryContactsService {
     fn is_valid_regex(text: &String, re: &str) -> Result<bool, regex::Error> {
         match Regex::new(re) {
             Ok(regex) => Ok(regex.is_match(text)),
-            Err(err) => return Err(err)
+            Err(err) => return Err(err),
         }
     }
 }
 
 impl ContactsService for InMemoryContactsService {
-    fn add(&mut self, name: String, phone_no_as_string: String, email: String) -> Result<(), String> {
-
+    fn add(
+        &mut self,
+        name: String,
+        phone_no_as_string: String,
+        email: String,
+    ) -> Result<(), String> {
         if name.is_empty() {
             return Err("Name cannot be empty".to_string());
         }
@@ -74,7 +87,7 @@ impl ContactsService for InMemoryContactsService {
                 if !is_valid_email {
                     return Err("Email is not valid".to_string());
                 }
-            },
+            }
             Err(err) => return Err(err.to_string()),
         }
 
@@ -83,7 +96,7 @@ impl ContactsService for InMemoryContactsService {
                 if !is_valid_phone_no {
                     return Err("Phone no is not valid".to_string());
                 }
-            },
+            }
             Err(err) => return Err(err.to_string()),
         }
 
@@ -104,13 +117,12 @@ impl ContactsService for InMemoryContactsService {
     }
 
     fn update_email(&mut self, name: &str, new_email: String) -> Result<bool, String> {
-
         match Self::is_valid_email(&new_email) {
             Ok(is_valid_email) => {
                 if !is_valid_email {
                     return Err("New email is not valid".to_string());
                 }
-            },
+            }
             Err(err) => return Err(err.to_string()),
         }
 
@@ -123,14 +135,17 @@ impl ContactsService for InMemoryContactsService {
         }
     }
 
-    fn update_phone_no(&mut self, name: &str, new_phone_no_as_string: String) -> Result<bool, String> {
-
+    fn update_phone_no(
+        &mut self,
+        name: &str,
+        new_phone_no_as_string: String,
+    ) -> Result<bool, String> {
         match Self::is_valid_phone_no(&new_phone_no_as_string) {
             Ok(is_valid_phone_no) => {
                 if !is_valid_phone_no {
                     return Err("New phone no is not valid".to_string());
                 }
-            },
+            }
             Err(err) => return Err(err.to_string()),
         }
 
