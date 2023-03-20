@@ -1,10 +1,17 @@
 # contacts-app
 Small app used for learning Rust
 
+## How To Run
+```sh
+$ make release
+$ ./target/release/contacts-app
+```
+
 ## Makefile
 Check out the makefile for all the available targets
 ```sh
 $ make
+```
 
 Contacts App
 Usage: 
@@ -37,9 +44,6 @@ In memory tree map, using the `name` as key.
 contacts: BTreeMap<String, Contact>,
 ```
 
-### Others
-- Regexes are lazily at-runtime evaluated statics using `lazy_static!` macro.
-
 ## Tag Along
 - cargo init => [2cfa2b1](https://github.com/MihaiBogdanEugen/contacts-app/tree/2cfa2b1a89a4e166d16a0d941c4358e74bb99158)
 - one makefile to rule them all => [f69fac3](https://github.com/MihaiBogdanEugen/contacts-app/tree/f69fac32d4b5c97cc11819a43ebd0bc7d9f99363)
@@ -52,6 +56,12 @@ contacts: BTreeMap<String, Contact>,
 - refined api, separate validation => [06b368a](https://github.com/MihaiBogdanEugen/contacts-app/tree/06b368adf3ddc5e69c86f9b624f0bb983d9881d0)
 - lazy loading for regexes, simplify validation => [6ac683a](https://github.com/MihaiBogdanEugen/contacts-app/tree/6ac683a9a2ca8d377696c42ccaf28d77308fd2da)
 - separate module with private fields and methods => [1bdf4ce](https://github.com/MihaiBogdanEugen/contacts-app/tree/1bdf4ce891d5971dba0d1e08aef9dc568bb18d3b)
+- repl => [574d189](https://github.com/MihaiBogdanEugen/contacts-app/tree/574d18985fa597a40d9ec9d2f2891a39cd918178)
+- export to json => [06f2341](https://github.com/MihaiBogdanEugen/contacts-app/tree/06f23415868fb56e129fec4420dc07f52f3ef07d)
+- import from json => [2489426](https://github.com/MihaiBogdanEugen/contacts-app/tree/2489426e475e6cc13f9cf71051289a131a224eef)
+- refactor error logic => [fcdb8ab](https://github.com/MihaiBogdanEugen/contacts-app/tree/fcdb8abab2c5674b4ce451f17d23d2be2f558121)
+- defensive programming style => [16025e0](https://github.com/MihaiBogdanEugen/contacts-app/tree/16025e0f3a8cee84b6404cd77594f67ef8ee2f9c)
+- list and count => [c56818a](https://github.com/MihaiBogdanEugen/contacts-app/tree/c56818a4d50723453490ab3f21bb584517fe77df)
 
 ## Todos
 - search 
