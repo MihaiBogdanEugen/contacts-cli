@@ -10,8 +10,7 @@ $ ./target/release/contacts-app
 ## Makefile
 Check out the makefile for all the available targets
 ```sh
-$ make
-```
+$ make help
 
 Contacts App
 Usage: 
