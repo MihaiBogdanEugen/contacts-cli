@@ -42,6 +42,8 @@ pub trait ContactsService {
     fn export_to_json(&self, file_path: String) -> Result<(), Error>;
 
     fn import_from_json(&mut self, path: String) -> Result<(), Error>;
+
+    fn count(&self) -> usize;
 }
 
 pub struct InMemoryContactsService {
@@ -179,6 +181,10 @@ impl ContactsService for InMemoryContactsService {
             .collect()
     }
 
+    fn count(&self) -> usize {
+        return self.contacts.values().count();
+    }
+
     fn export_to_json(&self, path: String) -> Result<(), Error> {
         let list: Vec<&Contact> = self.contacts.values().collect();
         let json_str: String = serde_json::to_string(&list)?;
@@ -305,7 +311,7 @@ mod tests {
     }
 
     #[test]
-    fn test_in_memory_contacts_service_list() {
+    fn test_in_memory_contacts_service_list_count() {
         let mut contacts_service: InMemoryContactsService = InMemoryContactsService::new();
         contacts_service
             .add(
@@ -406,5 +412,7 @@ mod tests {
         let page3: Vec<&Contact> = contacts_service.list(3, 3);
         assert_eq!(1, page3.len());
         assert_eq!("Sss", page3.get(0).unwrap().name);
+
+        assert_eq!(10, contacts_service.count());
     }
 }

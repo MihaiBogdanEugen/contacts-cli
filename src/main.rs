@@ -12,7 +12,8 @@ fn main() -> Result<(), String> {
     let mut contacts_service: InMemoryContactsService = InMemoryContactsService::new();
 
     loop {
-        let line: String = stdin_read_line()?;
+        let no_of_contacts: usize = contacts_service.count();
+        let line: String = stdin_read_line(no_of_contacts)?;
         let line: &str = line.trim();
         if line.is_empty() {
             continue;
@@ -95,6 +96,16 @@ fn respond(line: &str, contacts_service: &mut InMemoryContactsService) -> Result
                 Err(err) => stderr_write(&err.to_string())?,
             }
         }
+        Some(("list", sub_matches)) => {
+            let page_no_as_str: &str = get_arg("PAGE_NO", sub_matches);
+            let page_size_as_str: &str = get_arg("PAGE_SIZE", sub_matches);
+
+            let page_no: usize = page_no_as_str.parse::<usize>().unwrap_or(0);
+            let page_size: usize = page_size_as_str.parse::<usize>().unwrap_or(10);
+            let contacts: Vec<&Contact> = contacts_service.list(page_no, page_size);
+
+            stdout_write_contacts(contacts)?;
+        }
         Some(("quit", _)) => {
             stdout_write("Exiting...")?;
             quit = true;
@@ -162,11 +173,18 @@ fn cli() -> Command {
                 .arg(arg!(<PATH> "The path of the json file"))
                 .arg_required_else_help(true),
         )
+        .subcommand(
+            Command::new("list")
+                .about("List contacts")
+                .arg(arg!(<PAGE_NO> "Page no."))
+                .arg(arg!(<PAGE_SIZE> "Page size"))
+                .arg_required_else_help(true),
+        )
         .subcommand(Command::new("quit").alias("exit").about("Quit the REPL"))
 }
 
-fn stdin_read_line() -> Result<String, String> {
-    stdout_write("\n$ ")?;
+fn stdin_read_line(no_of_contacts: usize) -> Result<String, String> {
+    stdout_write_prompt(no_of_contacts)?;
     stdout_flush()?;
     let mut buf: String = String::new();
     std::io::stdin()
@@ -187,6 +205,17 @@ fn stdout_write(text: &str) -> Result<(), String> {
     write!(std::io::stdout(), "{}", text).map_err(|e| e.to_string())
 }
 
+fn stdout_write_prompt(no_of_contacts: usize) -> Result<(), String> {
+    let suffix = if no_of_contacts == 1 { "" } else { "s" };
+    write!(
+        std::io::stdout(),
+        "\n{} contact{} currently in the data store.\n\n$ ",
+        no_of_contacts,
+        suffix
+    )
+    .map_err(|e| e.to_string())
+}
+
 fn stdout_write_contact(contact: &Contact) -> Result<(), String> {
     write!(
         std::io::stdout(),
@@ -196,6 +225,15 @@ fn stdout_write_contact(contact: &Contact) -> Result<(), String> {
         contact.email
     )
     .map_err(|e| e.to_string())
+}
+
+fn stdout_write_contacts(contacts: Vec<&Contact>) -> Result<(), String> {
+    for contact in contacts {
+        stdout_write("-------------")?;
+        stdout_write_contact(contact)?;
+        stdout_write("-------------")?;
+    }
+    Ok(())
 }
 
 fn stdout_write_unknown_key(key: &str) -> Result<(), String> {
