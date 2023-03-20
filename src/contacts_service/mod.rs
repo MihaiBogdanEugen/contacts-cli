@@ -100,20 +100,20 @@ impl ContactsService for InMemoryContactsService {
             Err(err) => return Err(err.to_string()),
         }
 
-        match phone_no_as_string.parse::<u64>() {
-            Ok(phone_no) => {
-                self.contacts.insert(
-                    name.clone(),
-                    Contact {
-                        name,
-                        phone_no,
-                        email,
-                    },
-                );
-                return Ok(());
-            }
+        let phone_no: u64 = match phone_no_as_string.parse::<u64>() {
+            Ok(x) => x,
             Err(err) => return Err(err.to_string()),
-        }
+        };
+
+        self.contacts.insert(
+            name.clone(),
+            Contact {
+                name,
+                phone_no,
+                email,
+            },
+        );
+        return Ok(());
     }
 
     fn update_email(&mut self, name: &str, new_email: String) -> Result<bool, String> {
@@ -126,13 +126,13 @@ impl ContactsService for InMemoryContactsService {
             Err(err) => return Err(err.to_string()),
         }
 
-        match self.contacts.get_mut(name) {
-            Some(contact) => {
-                contact.email = new_email;
-                return Ok(true);
-            }
-            None => Ok(false),
-        }
+        let contact: &mut Contact = match self.contacts.get_mut(name) {
+            Some(x) => x,
+            None => return Ok(false),
+        };
+
+        contact.email = new_email;
+        return Ok(true);
     }
 
     fn update_phone_no(
@@ -149,16 +149,18 @@ impl ContactsService for InMemoryContactsService {
             Err(err) => return Err(err.to_string()),
         }
 
-        match new_phone_no_as_string.parse::<u64>() {
-            Ok(new_phone_no) => match self.contacts.get_mut(name) {
-                Some(contact) => {
-                    contact.phone_no = new_phone_no;
-                    return Ok(true);
-                }
-                None => Ok(false),
-            },
+        let new_phone_no: u64 = match new_phone_no_as_string.parse::<u64>() {
+            Ok(x) => x,
             Err(err) => return Err(err.to_string()),
-        }
+        };
+
+        let contact: &mut Contact = match self.contacts.get_mut(name) {
+            Some(x) => x,
+            None => return Ok(false),
+        };
+
+        contact.phone_no = new_phone_no;
+        return Ok(true);
     }
 
     fn delete(&mut self, name: &str) -> Option<Contact> {
