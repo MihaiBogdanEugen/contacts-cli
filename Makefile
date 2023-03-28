@@ -9,7 +9,7 @@ build:
 
 ## update: Update the dependencies of the current package
 update:
-	@cargo build		
+	@cargo update		
 
 # ## run: Run a binary of the local package
 # run:
@@ -35,4 +35,8 @@ fmt:
 test:
 	@cargo test --verbose
 
-.PHONY: help build update run check release clean fmt test
+## clippy: Run cargo clippy for static ckecks
+clippy:
+	@cargo clippy --all-targets --all-features --verbose
+
+.PHONY: help build update run check release clean fmt test clippy

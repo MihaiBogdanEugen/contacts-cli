@@ -270,8 +270,8 @@ mod tests {
         contacts_service
             .add(
                 expected_name.clone(),
-                expected_phone_no_as_string.clone(),
-                expected_email.clone(),
+                expected_phone_no_as_string,
+                expected_email,
             )
             .unwrap();
 
@@ -304,9 +304,9 @@ mod tests {
 
         contacts_service
             .add(
-                expected_name.clone(),
-                expected_phone_no_as_string.clone(),
-                expected_email.clone(),
+                expected_name,
+                expected_phone_no_as_string,
+                expected_email,
             )
             .unwrap();
 
