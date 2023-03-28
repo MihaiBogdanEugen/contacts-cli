@@ -17,7 +17,7 @@ update:
 
 ## check: Analyze the current package and report errors, but don't build object files
 check:
-	@cargo check
+	@cargo check --verbose
 
 ## release: Release the current package
 release:
@@ -29,10 +29,10 @@ clean:
 
 ## fmt: Format all Rust files of the current crate
 fmt:
-	@cargo fmt
+	@cargo fmt -- --emit=files
 
 ## test: Run the tests
 test:
-	@cargo test
+	@cargo test --verbose
 
 .PHONY: help build update run check release clean fmt test

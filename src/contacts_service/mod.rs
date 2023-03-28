@@ -50,6 +50,12 @@ pub struct InMemoryContactsService {
     contacts: BTreeMap<String, Contact>,
 }
 
+impl Default for InMemoryContactsService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl InMemoryContactsService {
     pub fn new() -> Self {
         InMemoryContactsService {
@@ -57,18 +63,18 @@ impl InMemoryContactsService {
         }
     }
 
-    fn is_valid_email(text: &String) -> Result<bool, regex::Error> {
+    fn is_valid_email(text: &str) -> Result<bool, regex::Error> {
         Self::is_valid_regex(text, EMAIL_REGEX)
     }
 
-    fn is_valid_phone_no(text: &String) -> Result<bool, regex::Error> {
+    fn is_valid_phone_no(text: &str) -> Result<bool, regex::Error> {
         Self::is_valid_regex(text, DE_PHONE_NO_REGEX)
     }
 
-    fn is_valid_regex(text: &String, re: &str) -> Result<bool, regex::Error> {
+    fn is_valid_regex(text: &str, re: &str) -> Result<bool, regex::Error> {
         match Regex::new(re) {
             Ok(regex) => Ok(regex.is_match(text)),
-            Err(err) => return Err(err),
+            Err(err) => Err(err),
         }
     }
 }
@@ -115,7 +121,7 @@ impl ContactsService for InMemoryContactsService {
                 email,
             },
         );
-        return Ok(());
+        Ok(())
     }
 
     fn update_email(&mut self, name: &str, new_email: String) -> Result<bool, String> {
@@ -134,7 +140,7 @@ impl ContactsService for InMemoryContactsService {
         };
 
         contact.email = new_email;
-        return Ok(true);
+        Ok(true)
     }
 
     fn update_phone_no(
@@ -162,15 +168,15 @@ impl ContactsService for InMemoryContactsService {
         };
 
         contact.phone_no = new_phone_no;
-        return Ok(true);
+        Ok(true)
     }
 
     fn delete(&mut self, name: &str) -> Option<Contact> {
-        return self.contacts.remove(name);
+        self.contacts.remove(name)
     }
 
     fn get(&self, name: &str) -> Option<&Contact> {
-        return self.contacts.get(name);
+        self.contacts.get(name)
     }
 
     fn list(&self, page_no: usize, page_size: usize) -> Vec<&Contact> {
