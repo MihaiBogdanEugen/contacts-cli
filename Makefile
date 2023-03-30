@@ -29,7 +29,7 @@ clean:
 
 ## fmt: Format all Rust files of the current crate
 fmt:
-	@cargo fmt -- --emit=files
+	@cargo fmt
 
 ## test: Run the tests
 test:
