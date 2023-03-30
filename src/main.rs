@@ -1,18 +1,17 @@
-use crate::contacts_service::{ContactsService, InMemoryContactsService};
 use clap::{arg, ArgMatches, Command};
 use models::contact::Contact;
+use repositories::{inmemory_contacts::InMemoryContactsRepository, contacts::ContactsRepository};
 use std::io::Write;
-
-pub mod contacts_service;
 
 mod db;
 mod models;
+mod repositories;
 
 fn main() -> Result<(), String> {
     stdout_write(
         "contacts-app\n\nUse `help` to discover more commands, or `quit` to exit the REPL\n",
     )?;
-    let mut contacts_service: InMemoryContactsService = InMemoryContactsService::new();
+    let mut contacts_service: InMemoryContactsRepository = InMemoryContactsRepository::new();
 
     loop {
         let no_of_contacts: usize = contacts_service.count();
@@ -38,7 +37,7 @@ fn main() -> Result<(), String> {
     Ok(())
 }
 
-fn respond(line: &str, contacts_service: &mut InMemoryContactsService) -> Result<bool, String> {
+fn respond(line: &str, contacts_service: &mut InMemoryContactsRepository) -> Result<bool, String> {
     let args: Vec<String> = shlex::split(line).ok_or("error: Invalid quoting")?;
     let matches: ArgMatches = cli()
         .try_get_matches_from(args)

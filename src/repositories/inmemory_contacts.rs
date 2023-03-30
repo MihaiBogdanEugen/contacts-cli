@@ -5,54 +5,25 @@ use std::{
     io::{BufReader, Error, Write},
 };
 
-use crate::models::contact::Contact;
+use crate::{models::contact::Contact, repositories::contacts::ContactsRepository};
 
 const EMAIL_REGEX: &str =
     r"^([a-z0-9_+]([a-z0-9_+.]*[a-z0-9_+])?)@([a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,6})";
 const DE_PHONE_NO_REGEX: &str = r"49[0-9]{9,10}";
 
-pub trait ContactsService {
-    fn add(
-        &mut self,
-        name: String,
-        phone_no_as_string: String,
-        email: String,
-    ) -> Result<(), String>;
-
-    fn update_email(&mut self, name: &str, new_email: String) -> Result<bool, String>;
-
-    fn update_phone_no(
-        &mut self,
-        name: &str,
-        new_phone_no_as_string: String,
-    ) -> Result<bool, String>;
-
-    fn delete(&mut self, name: &str) -> Option<Contact>;
-
-    fn get(&self, name: &str) -> Option<&Contact>;
-
-    fn list(&self, page_no: usize, page_size: usize) -> Vec<&Contact>;
-
-    fn export_to_json(&self, file_path: String) -> Result<(), Error>;
-
-    fn import_from_json(&mut self, path: String) -> Result<(), Error>;
-
-    fn count(&self) -> usize;
-}
-
-pub struct InMemoryContactsService {
+pub struct InMemoryContactsRepository {
     contacts: BTreeMap<String, Contact>,
 }
 
-impl Default for InMemoryContactsService {
+impl Default for InMemoryContactsRepository {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl InMemoryContactsService {
+impl InMemoryContactsRepository {
     pub fn new() -> Self {
-        InMemoryContactsService {
+        InMemoryContactsRepository {
             contacts: BTreeMap::new(),
         }
     }
@@ -73,7 +44,7 @@ impl InMemoryContactsService {
     }
 }
 
-impl ContactsService for InMemoryContactsService {
+impl ContactsRepository for InMemoryContactsRepository {
     fn add(
         &mut self,
         name: String,
@@ -210,7 +181,7 @@ mod tests {
 
     #[test]
     fn test_in_memory_contacts_service_add_get() {
-        let mut contacts_service: InMemoryContactsService = InMemoryContactsService::new();
+        let mut contacts_service: InMemoryContactsRepository = InMemoryContactsRepository::new();
 
         let expected_name: String = "Bogdan".to_string();
         let expected_phone_no_as_string: String = "491234567890".to_string();
@@ -236,7 +207,7 @@ mod tests {
 
     #[test]
     fn test_in_memory_contacts_service_add_validations() {
-        let mut contacts_service: InMemoryContactsService = InMemoryContactsService::new();
+        let mut contacts_service: InMemoryContactsRepository = InMemoryContactsRepository::new();
 
         let res_invalid_phone_no: Result<(), String> = contacts_service.add(
             "valid name".to_string(),
@@ -255,7 +226,7 @@ mod tests {
 
     #[test]
     fn test_in_memory_contacts_service_updates() {
-        let mut contacts_service: InMemoryContactsService = InMemoryContactsService::new();
+        let mut contacts_service: InMemoryContactsRepository = InMemoryContactsRepository::new();
 
         let expected_name: String = "Bogdan".to_string();
         let expected_phone_no_as_string: String = "491234567890".to_string();
@@ -290,7 +261,7 @@ mod tests {
 
     #[test]
     fn test_in_memory_contacts_service_delete() {
-        let mut contacts_service: InMemoryContactsService = InMemoryContactsService::new();
+        let mut contacts_service: InMemoryContactsRepository = InMemoryContactsRepository::new();
 
         let expected_name: String = "Bogdan".to_string();
         let expected_phone_no_as_string: String = "491234567890".to_string();
@@ -308,7 +279,7 @@ mod tests {
 
     #[test]
     fn test_in_memory_contacts_service_list_count() {
-        let mut contacts_service: InMemoryContactsService = InMemoryContactsService::new();
+        let mut contacts_service: InMemoryContactsRepository = InMemoryContactsRepository::new();
         contacts_service
             .add(
                 "Eee".to_string(),
