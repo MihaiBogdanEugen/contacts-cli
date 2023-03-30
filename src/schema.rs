@@ -1,8 +1,7 @@
 // @generated automatically by Diesel CLI.
 
 diesel::table! {
-    contacts (id) {
-        id -> Int4,
+    contacts (name) {
         name -> Text,
         phone_no -> Int8,
         email -> Text,
