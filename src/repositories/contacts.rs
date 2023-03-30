@@ -1,8 +1,25 @@
+use crate::models::contact::Contact;
+use regex::Regex;
 use std::io::Error;
 
-use crate::models::contact::Contact;
+const EMAIL_REGEX: &str =
+    r"^([a-z0-9_+]([a-z0-9_+.]*[a-z0-9_+])?)@([a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,6})";
+const DE_PHONE_NO_REGEX: &str = r"49[0-9]{9,10}";
 
+pub fn is_valid_email(text: &str) -> Result<bool, regex::Error> {
+    is_valid_regex(text, EMAIL_REGEX)
+}
 
+pub fn is_valid_phone_no(text: &str) -> Result<bool, regex::Error> {
+    is_valid_regex(text, DE_PHONE_NO_REGEX)
+}
+
+fn is_valid_regex(text: &str, re: &str) -> Result<bool, regex::Error> {
+    match Regex::new(re) {
+        Ok(regex) => Ok(regex.is_match(text)),
+        Err(err) => Err(err),
+    }
+}
 pub trait ContactsRepository {
     fn add(
         &mut self,

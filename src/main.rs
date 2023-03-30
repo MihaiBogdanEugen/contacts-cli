@@ -1,9 +1,9 @@
 use clap::{arg, ArgMatches, Command};
 use models::contact::Contact;
-use repositories::{inmemory_contacts::InMemoryContactsRepository, contacts::ContactsRepository};
+use repositories::contacts::ContactsRepository;
+use repositories::inmemory_contacts::InMemoryContactsRepository;
 use std::io::Write;
 
-mod db;
 mod models;
 mod repositories;
 

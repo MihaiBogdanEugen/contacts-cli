@@ -1,4 +1,3 @@
-use regex::Regex;
 use std::{
     collections::BTreeMap,
     fs::File,
@@ -7,9 +6,7 @@ use std::{
 
 use crate::{models::contact::Contact, repositories::contacts::ContactsRepository};
 
-const EMAIL_REGEX: &str =
-    r"^([a-z0-9_+]([a-z0-9_+.]*[a-z0-9_+])?)@([a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,6})";
-const DE_PHONE_NO_REGEX: &str = r"49[0-9]{9,10}";
+use super::contacts::{is_valid_email, is_valid_phone_no};
 
 pub struct InMemoryContactsRepository {
     contacts: BTreeMap<String, Contact>,
@@ -27,21 +24,6 @@ impl InMemoryContactsRepository {
             contacts: BTreeMap::new(),
         }
     }
-
-    fn is_valid_email(text: &str) -> Result<bool, regex::Error> {
-        Self::is_valid_regex(text, EMAIL_REGEX)
-    }
-
-    fn is_valid_phone_no(text: &str) -> Result<bool, regex::Error> {
-        Self::is_valid_regex(text, DE_PHONE_NO_REGEX)
-    }
-
-    fn is_valid_regex(text: &str, re: &str) -> Result<bool, regex::Error> {
-        match Regex::new(re) {
-            Ok(regex) => Ok(regex.is_match(text)),
-            Err(err) => Err(err),
-        }
-    }
 }
 
 impl ContactsRepository for InMemoryContactsRepository {
@@ -55,7 +37,7 @@ impl ContactsRepository for InMemoryContactsRepository {
             return Err("Name cannot be empty".to_string());
         }
 
-        match Self::is_valid_email(&email) {
+        match is_valid_email(&email) {
             Ok(is_valid_email) => {
                 if !is_valid_email {
                     return Err("Email is not valid".to_string());
@@ -64,7 +46,7 @@ impl ContactsRepository for InMemoryContactsRepository {
             Err(err) => return Err(err.to_string()),
         }
 
-        match Self::is_valid_phone_no(&phone_no_as_string) {
+        match is_valid_phone_no(&phone_no_as_string) {
             Ok(is_valid_phone_no) => {
                 if !is_valid_phone_no {
                     return Err("Phone no is not valid".to_string());
@@ -90,7 +72,7 @@ impl ContactsRepository for InMemoryContactsRepository {
     }
 
     fn update_email(&mut self, name: &str, new_email: String) -> Result<bool, String> {
-        match Self::is_valid_email(&new_email) {
+        match is_valid_email(&new_email) {
             Ok(is_valid_email) => {
                 if !is_valid_email {
                     return Err("New email is not valid".to_string());
@@ -113,7 +95,7 @@ impl ContactsRepository for InMemoryContactsRepository {
         name: &str,
         new_phone_no_as_string: String,
     ) -> Result<bool, String> {
-        match Self::is_valid_phone_no(&new_phone_no_as_string) {
+        match is_valid_phone_no(&new_phone_no_as_string) {
             Ok(is_valid_phone_no) => {
                 if !is_valid_phone_no {
                     return Err("New phone no is not valid".to_string());

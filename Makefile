@@ -39,11 +39,11 @@ test:
 clippy:
 	@cargo clippy --all-targets --all-features --verbose
 
-## start-db: Run docker-compose to start the Postgres db
+## start-db: Run docker-compose to start the db
 start-db:
 	@docker-compose up -d
 
-## stop-db: Run docker-compose to stop the Postgres db
+## stop-db: Run docker-compose to stop the db
 stop-db:
 	@docker-compose down
 
