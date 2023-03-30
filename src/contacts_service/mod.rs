@@ -1,21 +1,15 @@
 use regex::Regex;
-use serde::{Deserialize, Serialize};
 use std::{
     collections::BTreeMap,
     fs::File,
     io::{BufReader, Error, Write},
 };
 
+use crate::models::contact::Contact;
+
 const EMAIL_REGEX: &str =
     r"^([a-z0-9_+]([a-z0-9_+.]*[a-z0-9_+])?)@([a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,6})";
 const DE_PHONE_NO_REGEX: &str = r"49[0-9]{9,10}";
-
-#[derive(Serialize, Deserialize)]
-pub struct Contact {
-    pub name: String,
-    pub phone_no: u64,
-    pub email: String,
-}
 
 pub trait ContactsService {
     fn add(
@@ -108,7 +102,7 @@ impl ContactsService for InMemoryContactsService {
             Err(err) => return Err(err.to_string()),
         }
 
-        let phone_no: u64 = match phone_no_as_string.parse::<u64>() {
+        let phone_no: i64 = match phone_no_as_string.parse::<i64>() {
             Ok(x) => x,
             Err(err) => return Err(err.to_string()),
         };
@@ -157,7 +151,7 @@ impl ContactsService for InMemoryContactsService {
             Err(err) => return Err(err.to_string()),
         }
 
-        let new_phone_no: u64 = match new_phone_no_as_string.parse::<u64>() {
+        let new_phone_no: i64 = match new_phone_no_as_string.parse::<i64>() {
             Ok(x) => x,
             Err(err) => return Err(err.to_string()),
         };
@@ -303,11 +297,7 @@ mod tests {
         let expected_email: String = "bogdan@mail.com".to_string();
 
         contacts_service
-            .add(
-                expected_name,
-                expected_phone_no_as_string,
-                expected_email,
-            )
+            .add(expected_name, expected_phone_no_as_string, expected_email)
             .unwrap();
 
         contacts_service.delete("Bogdan").unwrap();

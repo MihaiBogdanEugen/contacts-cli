@@ -1,11 +1,12 @@
 use crate::contacts_service::{ContactsService, InMemoryContactsService};
 use clap::{arg, ArgMatches, Command};
-use contacts_service::Contact;
+use models::contact::Contact;
 use std::io::Write;
 
 pub mod contacts_service;
 
 mod db;
+mod models;
 
 fn main() -> Result<(), String> {
     stdout_write(

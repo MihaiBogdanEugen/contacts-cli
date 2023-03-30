@@ -5,8 +5,7 @@ use std::env;
 
 const DATABASE_URL_KEY: &str = "DATABASE_URL";
 
-fn establish_connection() -> Result<PgConnection, String> {
-    
+fn get_db_connection() -> Result<PgConnection, String> {
     if dotenv().is_err() {
         return Err("Cannot load .env file".to_string());
     }
