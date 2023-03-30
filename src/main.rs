@@ -5,6 +5,8 @@ use std::io::Write;
 
 pub mod contacts_service;
 
+mod db;
+
 fn main() -> Result<(), String> {
     stdout_write(
         "contacts-app\n\nUse `help` to discover more commands, or `quit` to exit the REPL\n",
