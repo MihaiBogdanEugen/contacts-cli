@@ -1,12 +1,12 @@
 use std::{
     collections::BTreeMap,
     fs::File,
-    io::{BufReader, Error, Write},
+    io::{BufReader, Write},
 };
 
 use crate::{models::contact::Contact, repositories::contacts::ContactsRepository};
 
-use super::contacts::{is_valid_email, is_valid_phone_no};
+use super::contacts::{get_valid_name, get_valid_email, get_valid_phone_no};
 
 pub struct InMemoryContactsRepository {
     contacts: BTreeMap<String, Contact>,
@@ -33,32 +33,9 @@ impl ContactsRepository for InMemoryContactsRepository {
         phone_no_as_string: String,
         email: String,
     ) -> Result<(), String> {
-        if name.is_empty() {
-            return Err("Name cannot be empty".to_string());
-        }
-
-        match is_valid_email(&email) {
-            Ok(is_valid_email) => {
-                if !is_valid_email {
-                    return Err("Email is not valid".to_string());
-                }
-            }
-            Err(err) => return Err(err.to_string()),
-        }
-
-        match is_valid_phone_no(&phone_no_as_string) {
-            Ok(is_valid_phone_no) => {
-                if !is_valid_phone_no {
-                    return Err("Phone no is not valid".to_string());
-                }
-            }
-            Err(err) => return Err(err.to_string()),
-        }
-
-        let phone_no: i64 = match phone_no_as_string.parse::<i64>() {
-            Ok(x) => x,
-            Err(err) => return Err(err.to_string()),
-        };
+        let name: String = get_valid_name(&name)?;
+        let email:String = get_valid_email(&email)?;
+        let phone_no: u64 = get_valid_phone_no(&phone_no_as_string)?;
 
         self.contacts.insert(
             name.clone(),
@@ -71,85 +48,74 @@ impl ContactsRepository for InMemoryContactsRepository {
         Ok(())
     }
 
-    fn update_email(&mut self, name: &str, new_email: String) -> Result<bool, String> {
-        match is_valid_email(&new_email) {
-            Ok(is_valid_email) => {
-                if !is_valid_email {
-                    return Err("New email is not valid".to_string());
-                }
-            }
-            Err(err) => return Err(err.to_string()),
-        }
+    fn update_email(&mut self, name: &str, new_email: String) -> Result<(), String> {
+        let email:String = get_valid_email(&new_email)?;
 
         let contact: &mut Contact = match self.contacts.get_mut(name) {
             Some(x) => x,
-            None => return Ok(false),
+            None => return Ok(()),
         };
 
         contact.email = new_email;
-        Ok(true)
+        Ok(())
     }
 
     fn update_phone_no(
         &mut self,
         name: &str,
         new_phone_no_as_string: String,
-    ) -> Result<bool, String> {
-        match is_valid_phone_no(&new_phone_no_as_string) {
-            Ok(is_valid_phone_no) => {
-                if !is_valid_phone_no {
-                    return Err("New phone no is not valid".to_string());
-                }
-            }
-            Err(err) => return Err(err.to_string()),
-        }
-
-        let new_phone_no: i64 = match new_phone_no_as_string.parse::<i64>() {
-            Ok(x) => x,
-            Err(err) => return Err(err.to_string()),
-        };
-
+    ) -> Result<(), String> {
+        let new_phone_no: u64 = get_valid_phone_no(&new_phone_no_as_string)?;
+        
         let contact: &mut Contact = match self.contacts.get_mut(name) {
             Some(x) => x,
-            None => return Ok(false),
+            None => return Ok(()),
         };
 
         contact.phone_no = new_phone_no;
-        Ok(true)
+        Ok(())
     }
 
-    fn delete(&mut self, name: &str) -> Option<Contact> {
-        self.contacts.remove(name)
+    fn delete(&mut self, name: &str) -> Result<(), String> {
+        self.contacts.remove(name);
+        Ok(())
     }
 
-    fn get(&self, name: &str) -> Option<&Contact> {
-        self.contacts.get(name)
+    fn get(&self, name: &str) -> Result<Option<&Contact>, String> {
+        Ok(self.contacts.get(name))
     }
 
-    fn list(&self, page_no: usize, page_size: usize) -> Vec<&Contact> {
-        self.contacts
+    fn list(&self, page_no: usize, page_size: usize) -> Result<Vec<&Contact>, String> {
+        let contacts: Vec<&Contact> = self.contacts
             .values()
             .skip(page_no * page_size)
             .take(page_size)
-            .collect()
+            .collect();
+
+        return Ok(contacts);
     }
 
     fn count(&self) -> usize {
         return self.contacts.values().count();
     }
 
-    fn export_to_json(&self, path: String) -> Result<(), Error> {
+    fn export_to_json(&self, path: String) -> Result<(), String> {
         let list: Vec<&Contact> = self.contacts.values().collect();
-        let json_str: String = serde_json::to_string(&list)?;
-        let mut file: File = File::create(path)?;
-        file.write_all(json_str.as_bytes())?;
+        let json_str: String = serde_json::to_string(&list)
+            .map_err(|err| err.to_string())?;
+        let mut file: File = File::create(path)
+            .map_err(|err| err.to_string())?;
+        file.write_all(json_str.as_bytes())
+            .map_err(|err| err.to_string())?;
         Ok(())
     }
 
-    fn import_from_json(&mut self, path: String) -> Result<(), Error> {
-        let inner: File = File::open(path)?;
+    fn import_from_json(&mut self, path: String) -> Result<(), String> {
+        let inner: File = File::open(path)
+            .map_err(|err| err.to_string())?;
         let rdr: BufReader<File> = BufReader::new(inner);
-        let contacts: Vec<Contact> = serde_json::from_reader(rdr).unwrap();
+        let contacts: Vec<Contact> = serde_json::from_reader(rdr)
+            .map_err(|err| err.to_string())?;
         for contact in contacts {
             self.contacts.insert(contact.name.clone(), contact);
         }
@@ -177,7 +143,7 @@ mod tests {
             )
             .unwrap();
 
-        let actual_contact: &Contact = contacts_service.get("Bogdan").unwrap();
+        let actual_contact: &Contact = contacts_service.get("Bogdan").ok().unwrap().unwrap();
 
         assert_eq!(expected_name, actual_contact.name);
         assert_eq!(
@@ -232,7 +198,7 @@ mod tests {
             .update_email("Bogdan", new_email.clone())
             .unwrap();
 
-        let actual_contact: &Contact = contacts_service.get("Bogdan").unwrap();
+        let actual_contact: &Contact = contacts_service.get("Bogdan").unwrap().unwrap();
         assert_eq!(expected_name, actual_contact.name);
         assert_eq!(
             new_expected_phone_no_as_string,
@@ -256,7 +222,7 @@ mod tests {
         contacts_service.delete("Bogdan").unwrap();
 
         let res_get = contacts_service.get("Bogdan");
-        assert!(res_get.is_none());
+        assert!(res_get.unwrap().is_none());
     }
 
     #[test]
@@ -340,25 +306,25 @@ mod tests {
             )
             .unwrap();
 
-        let page0: Vec<&Contact> = contacts_service.list(0, 3);
+        let page0: Vec<&Contact> = contacts_service.list(0, 3).unwrap();
         assert_eq!(3, page0.len());
         assert_eq!("Aaa", page0.get(0).unwrap().name);
         assert_eq!("Aaa2", page0.get(1).unwrap().name);
         assert_eq!("Aaa3", page0.get(2).unwrap().name);
 
-        let page1: Vec<&Contact> = contacts_service.list(1, 3);
+        let page1: Vec<&Contact> = contacts_service.list(1, 3).unwrap();
         assert_eq!(3, page1.len());
         assert_eq!("Bbb", page1.get(0).unwrap().name);
         assert_eq!("Ccc", page1.get(1).unwrap().name);
         assert_eq!("Ddd", page1.get(2).unwrap().name);
 
-        let page2: Vec<&Contact> = contacts_service.list(2, 3);
+        let page2: Vec<&Contact> = contacts_service.list(2, 3).unwrap();
         assert_eq!(3, page2.len());
         assert_eq!("Eee", page2.get(0).unwrap().name);
         assert_eq!("Lll", page2.get(1).unwrap().name);
         assert_eq!("Mmm", page2.get(2).unwrap().name);
 
-        let page3: Vec<&Contact> = contacts_service.list(3, 3);
+        let page3: Vec<&Contact> = contacts_service.list(3, 3).unwrap();
         assert_eq!(1, page3.len());
         assert_eq!("Sss", page3.get(0).unwrap().name);
 

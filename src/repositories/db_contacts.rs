@@ -1,12 +1,17 @@
 use dotenvy::dotenv;
+use redis::Client as RedisClient;
+use redis::Commands;
+use redis::Connection as RedisConnection;
 use std::env;
 
 use crate::{models::contact::Contact, repositories::contacts::ContactsRepository};
 
-use super::contacts::{is_valid_email, is_valid_phone_no};
+use super::contacts::{get_valid_name, get_valid_email, get_valid_phone_no};
 
-const DATABASE_URL_KEY: &str = "DATABASE_URL";
-pub struct DbContactsRepository {}
+const REDIS_URL_KEY: &str = "REDIS_URL";
+pub struct DbContactsRepository {
+    redis_client: RedisClient,
+}
 
 impl Default for DbContactsRepository {
     fn default() -> Self {
@@ -16,10 +21,13 @@ impl Default for DbContactsRepository {
 
 impl DbContactsRepository {
     pub fn new() -> Self {
-        DbContactsRepository {}
+        dotenv().expect("Error loading .env file");
+        let redis_url: String =
+            env::var(REDIS_URL_KEY).expect(format!("Cannot find key {REDIS_URL_KEY}").as_str());
+        let redis_client: RedisClient = RedisClient::open(redis_url.clone())
+            .expect(format!("Cannot connect to Redis instance {redis_url}").as_str());
+        DbContactsRepository { redis_client }
     }
-
-    
 }
 
 impl ContactsRepository for DbContactsRepository {
@@ -29,45 +37,25 @@ impl ContactsRepository for DbContactsRepository {
         phone_no_as_string: String,
         email: String,
     ) -> Result<(), String> {
-        if name.is_empty() {
-            return Err("Name cannot be empty".to_string());
-        }
-
-        match is_valid_email(&email) {
-            Ok(is_valid_email) => {
-                if !is_valid_email {
-                    return Err("Email is not valid".to_string());
-                }
-            }
-            Err(err) => return Err(err.to_string()),
-        }
-
-        match is_valid_phone_no(&phone_no_as_string) {
-            Ok(is_valid_phone_no) => {
-                if !is_valid_phone_no {
-                    return Err("Phone no is not valid".to_string());
-                }
-            }
-            Err(err) => return Err(err.to_string()),
-        }
-
-        let phone_no: i64 = match phone_no_as_string.parse::<i64>() {
-            Ok(x) => x,
-            Err(err) => return Err(err.to_string()),
-        };
+        let name: String = get_valid_name(&name)?;
+        let email:String = get_valid_email(&email)?;
+        let phone_no: u64 = get_valid_phone_no(&phone_no_as_string)?;
+        let mut redis_connection: RedisConnection = self
+            .redis_client
+            .get_connection()
+            .map_err(|err| err.to_string())?;
+        let key: String = format!("contacts:{name}");
 
         todo!()
     }
 
-    fn update_email(&mut self, name: &str, new_email: String) -> Result<bool, String> {
-        match is_valid_email(&new_email) {
-            Ok(is_valid_email) => {
-                if !is_valid_email {
-                    return Err("New email is not valid".to_string());
-                }
-            }
-            Err(err) => return Err(err.to_string()),
-        }
+    fn update_email(&mut self, name: &str, new_email: String) -> Result<(), String> {
+        let email:String = get_valid_email(&new_email)?;
+        let mut redis_connection: RedisConnection = self
+            .redis_client
+            .get_connection()
+            .map_err(|err| err.to_string())?;
+        let key: String = format!("contacts:{name}");
 
         todo!()
     }
@@ -76,41 +64,52 @@ impl ContactsRepository for DbContactsRepository {
         &mut self,
         name: &str,
         new_phone_no_as_string: String,
-    ) -> Result<bool, String> {
-        match is_valid_phone_no(&new_phone_no_as_string) {
-            Ok(is_valid_phone_no) => {
-                if !is_valid_phone_no {
-                    return Err("New phone no is not valid".to_string());
-                }
-            }
-            Err(err) => return Err(err.to_string()),
-        }
-
-        let new_phone_no: i64 = match new_phone_no_as_string.parse::<i64>() {
-            Ok(x) => x,
-            Err(err) => return Err(err.to_string()),
-        };
+    ) -> Result<(), String> {
+        let new_phone_no: u64 = get_valid_phone_no(&new_phone_no_as_string)?;
+        let mut redis_connection: RedisConnection = self
+            .redis_client
+            .get_connection()
+            .map_err(|err| err.to_string())?;
+        let key: String = format!("contacts:{name}");
 
         todo!()
     }
 
-    fn delete(&mut self, name: &str) -> Option<Contact> {
+    fn delete(&mut self, name: &str) -> Result<(), String> {
+        let mut redis_connection: RedisConnection = self
+            .redis_client
+            .get_connection()
+            .map_err(|err| err.to_string())?;
+        let key: String = format!("contacts:{name}");
+
+        redis_connection.del(key)
+            .map_err(|err| err.to_string())?;
+
+        Ok(())
+    }
+
+    fn get(&self, name: &str) -> Result<Option<&Contact>, String> {
+        let mut redis_connection: RedisConnection = self
+            .redis_client
+            .get_connection()
+            .map_err(|err| err.to_string())?;
+        let key: String = format!("contacts:{name}");
+
+        let values: Vec<String> = redis_connection.hgetall(key)
+            .map_err(|err| err.to_string())?;        
+
         todo!()
     }
 
-    fn get(&self, name: &str) -> Option<&Contact> {
+    fn list(&self, page_no: usize, page_size: usize) -> Result<Vec<&Contact>, String> {
         todo!()
     }
 
-    fn list(&self, page_no: usize, page_size: usize) -> Vec<&Contact> {
+    fn export_to_json(&self, file_path: String) -> Result<(), String> {
         todo!()
     }
 
-    fn export_to_json(&self, file_path: String) -> Result<(), std::io::Error> {
-        todo!()
-    }
-
-    fn import_from_json(&mut self, path: String) -> Result<(), std::io::Error> {
+    fn import_from_json(&mut self, path: String) -> Result<(), String> {
         todo!()
     }
 

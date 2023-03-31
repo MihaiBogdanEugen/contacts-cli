@@ -55,34 +55,26 @@ fn respond(line: &str, contacts_service: &mut InMemoryContactsRepository) -> Res
         Some(("update-phone-no", sub_matches)) => {
             let name: &str = get_arg("NAME", sub_matches);
             let new_phone_no_as_string: String = get_arg("NEW_PHONE_NO", sub_matches).to_string();
-            if contacts_service.update_phone_no(name, new_phone_no_as_string)? {
-                stdout_write("Contact updated succesfully")?;
-            } else {
-                stdout_write_unknown_key(name)?;
-            }
+            contacts_service.update_phone_no(name, new_phone_no_as_string)?;
+            stdout_write("Contact updated succesfully")?;
         }
         Some(("update-email", sub_matches)) => {
             let name: &str = get_arg("NAME", sub_matches);
             let new_email: String = get_arg("NEW_EMAIL", sub_matches).to_string();
-            if contacts_service.update_email(name, new_email)? {
-                stdout_write("Contact updated succesfully")?;
-            } else {
-                stdout_write_unknown_key(name)?;
-            }
+            contacts_service.update_email(name, new_email)?;
+            stdout_write("Contact updated succesfully")?;
         }
         Some(("view", sub_matches)) => {
             let name: &str = get_arg("NAME", sub_matches);
-            match contacts_service.get(name) {
+            match contacts_service.get(name).unwrap() {
                 Some(contact) => stdout_write_contact(contact)?,
                 None => stdout_write_unknown_key(name)?,
             }
         }
         Some(("delete", sub_matches)) => {
             let name: &str = get_arg("NAME", sub_matches);
-            match contacts_service.delete(name) {
-                Some(_) => stdout_write("Contact deleted succesfully")?,
-                None => stdout_write_unknown_key(name)?,
-            }
+            contacts_service.delete(name)?;
+            stdout_write("Contact deleted succesfully")?;
         }
         Some(("export", sub_matches)) => {
             let path: &str = get_arg("PATH", sub_matches);
@@ -104,7 +96,7 @@ fn respond(line: &str, contacts_service: &mut InMemoryContactsRepository) -> Res
 
             let page_no: usize = page_no_as_str.parse::<usize>().unwrap_or(0);
             let page_size: usize = page_size_as_str.parse::<usize>().unwrap_or(10);
-            let contacts: Vec<&Contact> = contacts_service.list(page_no, page_size);
+            let contacts: Vec<&Contact> = contacts_service.list(page_no, page_size)?;
 
             stdout_write_contacts(contacts)?;
         }
