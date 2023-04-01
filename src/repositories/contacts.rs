@@ -17,24 +17,24 @@ pub fn get_valid_name(name: &str) -> Result<String, String> {
         return Err("name canot be empty".to_string());
     }
 
-    return Ok(name.to_string());
+    Ok(name.to_string())
 }
 
 pub fn get_valid_email(email: &str) -> Result<String, String> {
 
-    let is_valid_email: bool = is_valid_regex(&email, EMAIL_REGEX)
+    let is_valid_email: bool = is_valid_regex(email, EMAIL_REGEX)
         .map_err(|err| err.to_string())?;
     
     if !is_valid_email {
         return Err("Email is not valid".to_string());
     }
 
-    return Ok(email.to_string());
+    Ok(email.to_string())
 }
 
 pub fn get_valid_phone_no(phone_no_as_string: &str) -> Result<u64, String> {
     
-    let is_valid_phone_no: bool = is_valid_regex(&phone_no_as_string, DE_PHONE_NO_REGEX)
+    let is_valid_phone_no: bool = is_valid_regex(phone_no_as_string, DE_PHONE_NO_REGEX)
         .map_err(|err| err.to_string())?;
 
     if !is_valid_phone_no {
@@ -44,7 +44,7 @@ pub fn get_valid_phone_no(phone_no_as_string: &str) -> Result<u64, String> {
     let phone_no: u64 = phone_no_as_string.parse::<u64>()
         .map_err(|err| err.to_string())?;
 
-    return Ok(phone_no);
+    Ok(phone_no)
 }
 
 pub trait ContactsRepository {
@@ -65,13 +65,13 @@ pub trait ContactsRepository {
 
     fn delete(&mut self, name: &str) -> Result<(), String>;
 
-    fn get(&self, name: &str) -> Result<Option<&Contact>, String>;
+    fn get(&self, name: &str) -> Result<Option<Contact>, String>;
 
-    fn list(&self, page_no: usize, page_size: usize) -> Result<Vec<&Contact>, String>;
+    fn list(&self, page_no: usize, page_size: usize) -> Result<Vec<Contact>, String>;
 
     fn export_to_json(&self, file_path: String) -> Result<(), String>;
 
     fn import_from_json(&mut self, path: String) -> Result<(), String>;
 
-    fn count(&self) -> usize;
+    fn count(&self) -> Result<usize, String>;
 }

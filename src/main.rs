@@ -1,7 +1,7 @@
 use clap::{arg, ArgMatches, Command};
 use models::contact::Contact;
 use repositories::contacts::ContactsRepository;
-use repositories::inmemory_contacts::InMemoryContactsRepository;
+use repositories::db_contacts::DbContactsRepository;
 use std::io::Write;
 
 mod models;
@@ -11,10 +11,10 @@ fn main() -> Result<(), String> {
     stdout_write(
         "contacts-app\n\nUse `help` to discover more commands, or `quit` to exit the REPL\n",
     )?;
-    let mut contacts_service: InMemoryContactsRepository = InMemoryContactsRepository::new();
+    let mut contacts_service: DbContactsRepository = DbContactsRepository::new();
 
     loop {
-        let no_of_contacts: usize = contacts_service.count();
+        let no_of_contacts: usize = contacts_service.count()?;
         let line: String = stdin_read_line(no_of_contacts)?;
         let line: &str = line.trim();
         if line.is_empty() {
@@ -37,7 +37,7 @@ fn main() -> Result<(), String> {
     Ok(())
 }
 
-fn respond(line: &str, contacts_service: &mut InMemoryContactsRepository) -> Result<bool, String> {
+fn respond(line: &str, contacts_service: &mut DbContactsRepository) -> Result<bool, String> {
     let args: Vec<String> = shlex::split(line).ok_or("error: Invalid quoting")?;
     let matches: ArgMatches = cli()
         .try_get_matches_from(args)
@@ -80,14 +80,14 @@ fn respond(line: &str, contacts_service: &mut InMemoryContactsRepository) -> Res
             let path: &str = get_arg("PATH", sub_matches);
             match contacts_service.export_to_json(path.to_string()) {
                 Ok(_) => stdout_write("Contacts exported successfully")?,
-                Err(err) => stderr_write(&err.to_string())?,
+                Err(err) => stderr_write(&err)?,
             }
         }
         Some(("import", sub_matches)) => {
             let path: &str = get_arg("PATH", sub_matches);
             match contacts_service.import_from_json(path.to_string()) {
                 Ok(_) => stdout_write("Contacts imported successfully")?,
-                Err(err) => stderr_write(&err.to_string())?,
+                Err(err) => stderr_write(&err)?,
             }
         }
         Some(("list", sub_matches)) => {
@@ -96,7 +96,7 @@ fn respond(line: &str, contacts_service: &mut InMemoryContactsRepository) -> Res
 
             let page_no: usize = page_no_as_str.parse::<usize>().unwrap_or(0);
             let page_size: usize = page_size_as_str.parse::<usize>().unwrap_or(10);
-            let contacts: Vec<&Contact> = contacts_service.list(page_no, page_size)?;
+            let contacts: Vec<Contact> = contacts_service.list(page_no, page_size)?;
 
             stdout_write_contacts(contacts)?;
         }
@@ -210,7 +210,7 @@ fn stdout_write_prompt(no_of_contacts: usize) -> Result<(), String> {
     .map_err(|e| e.to_string())
 }
 
-fn stdout_write_contact(contact: &Contact) -> Result<(), String> {
+fn stdout_write_contact(contact: Contact) -> Result<(), String> {
     write!(
         std::io::stdout(),
         "Contact\n- name: {}\n- phone_no: {}\n- email: {}",
@@ -221,7 +221,7 @@ fn stdout_write_contact(contact: &Contact) -> Result<(), String> {
     .map_err(|e| e.to_string())
 }
 
-fn stdout_write_contacts(contacts: Vec<&Contact>) -> Result<(), String> {
+fn stdout_write_contacts(contacts: Vec<Contact>) -> Result<(), String> {
     for contact in contacts {
         stdout_write("-------------")?;
         stdout_write_contact(contact)?;

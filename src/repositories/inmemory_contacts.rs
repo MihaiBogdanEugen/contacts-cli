@@ -49,7 +49,7 @@ impl ContactsRepository for InMemoryContactsRepository {
     }
 
     fn update_email(&mut self, name: &str, new_email: String) -> Result<(), String> {
-        let email:String = get_valid_email(&new_email)?;
+        let new_email:String = get_valid_email(&new_email)?;
 
         let contact: &mut Contact = match self.contacts.get_mut(name) {
             Some(x) => x,
@@ -81,22 +81,27 @@ impl ContactsRepository for InMemoryContactsRepository {
         Ok(())
     }
 
-    fn get(&self, name: &str) -> Result<Option<&Contact>, String> {
-        Ok(self.contacts.get(name))
+    fn get(&self, name: &str) -> Result<Option<Contact>, String> {
+        let contact: Contact = match self.contacts.get(name) {
+            Some(x) => (*x).clone(),
+            None => return Ok(None),
+        };
+        Ok(Some(contact))
     }
 
-    fn list(&self, page_no: usize, page_size: usize) -> Result<Vec<&Contact>, String> {
-        let contacts: Vec<&Contact> = self.contacts
+    fn list(&self, page_no: usize, page_size: usize) -> Result<Vec<Contact>, String> {
+        let contacts: Vec<Contact> = self.contacts
             .values()
             .skip(page_no * page_size)
             .take(page_size)
+            .map(|c| (*c).clone())
             .collect();
 
-        return Ok(contacts);
+        Ok(contacts)
     }
 
-    fn count(&self) -> usize {
-        return self.contacts.values().count();
+    fn count(&self) -> Result<usize, String> {
+        return Ok(self.contacts.values().count());
     }
 
     fn export_to_json(&self, path: String) -> Result<(), String> {
@@ -143,7 +148,7 @@ mod tests {
             )
             .unwrap();
 
-        let actual_contact: &Contact = contacts_service.get("Bogdan").ok().unwrap().unwrap();
+        let actual_contact: Contact = contacts_service.get("Bogdan").ok().unwrap().unwrap();
 
         assert_eq!(expected_name, actual_contact.name);
         assert_eq!(
@@ -198,7 +203,7 @@ mod tests {
             .update_email("Bogdan", new_email.clone())
             .unwrap();
 
-        let actual_contact: &Contact = contacts_service.get("Bogdan").unwrap().unwrap();
+        let actual_contact: Contact = contacts_service.get("Bogdan").unwrap().unwrap();
         assert_eq!(expected_name, actual_contact.name);
         assert_eq!(
             new_expected_phone_no_as_string,
@@ -306,28 +311,28 @@ mod tests {
             )
             .unwrap();
 
-        let page0: Vec<&Contact> = contacts_service.list(0, 3).unwrap();
+        let page0: Vec<Contact> = contacts_service.list(0, 3).unwrap();
         assert_eq!(3, page0.len());
         assert_eq!("Aaa", page0.get(0).unwrap().name);
         assert_eq!("Aaa2", page0.get(1).unwrap().name);
         assert_eq!("Aaa3", page0.get(2).unwrap().name);
 
-        let page1: Vec<&Contact> = contacts_service.list(1, 3).unwrap();
+        let page1: Vec<Contact> = contacts_service.list(1, 3).unwrap();
         assert_eq!(3, page1.len());
         assert_eq!("Bbb", page1.get(0).unwrap().name);
         assert_eq!("Ccc", page1.get(1).unwrap().name);
         assert_eq!("Ddd", page1.get(2).unwrap().name);
 
-        let page2: Vec<&Contact> = contacts_service.list(2, 3).unwrap();
+        let page2: Vec<Contact> = contacts_service.list(2, 3).unwrap();
         assert_eq!(3, page2.len());
         assert_eq!("Eee", page2.get(0).unwrap().name);
         assert_eq!("Lll", page2.get(1).unwrap().name);
         assert_eq!("Mmm", page2.get(2).unwrap().name);
 
-        let page3: Vec<&Contact> = contacts_service.list(3, 3).unwrap();
+        let page3: Vec<Contact> = contacts_service.list(3, 3).unwrap();
         assert_eq!(1, page3.len());
         assert_eq!("Sss", page3.get(0).unwrap().name);
 
-        assert_eq!(10, contacts_service.count());
+        assert_eq!(10, contacts_service.count().unwrap());
     }
 }

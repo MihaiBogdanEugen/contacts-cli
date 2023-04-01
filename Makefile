@@ -11,9 +11,9 @@ build:
 update:
 	@cargo update		
 
-# ## run: Run a binary of the local package
-# run:
-# 	@cargo run
+## run: Run a binary of the local package
+run:
+	@cargo run
 
 ## check: Analyze the current package and report errors, but don't build object files
 check:
