@@ -1,6 +1,6 @@
 ## help: Prints this help message
 help:
-	@echo "\nContacts App\nUsage: \n"
+	@echo "\nContacts CLI\nUsage: \n"
 	@sed -n "s/^##//p" ${MAKEFILE_LIST} | column -t -s ":" |  sed -e "s/^/ /"
 
 ## build: Compile the current package
