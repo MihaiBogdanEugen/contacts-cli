@@ -9,7 +9,7 @@ mod repositories;
 
 fn main() -> Result<(), String> {
     stdout_write(
-        "contacts-app\n\nUse `help` to discover more commands, or `quit` to exit the REPL\n",
+        "contacts-cli\n\nUse `help` to discover more commands, or `quit` to exit the REPL\n",
     )?;
     let mut contacts_service: DbContactsRepository = DbContactsRepository::new();
 
@@ -116,7 +116,7 @@ fn respond(line: &str, contacts_service: &mut DbContactsRepository) -> Result<bo
 }
 
 fn cli() -> Command {
-    Command::new("contacts-app")
+    Command::new("contacts-cli")
         .about("Small & primitive contacts application with a REPL CLI")
         .multicall(true)
         .arg_required_else_help(true)
